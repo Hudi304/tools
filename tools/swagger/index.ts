@@ -39,7 +39,6 @@ function readFile(path: any): string | undefined {
   try {
     const data = fs.readFileSync(path, 'utf8');
     return (data)
-
   } catch (err) {
     return (undefined)
   }
@@ -54,7 +53,7 @@ function writeFiles(ROOT: string, PATH: string, fileType: string, files: DTO_Fil
 }
 
 function writeFile(path: string, data: any) {
-  console.log(chalk.green(`Created File : ${path}`))
+  console.log(chalk.green(`    Created File : ${path}`))
   mkdirp(getDirName(path)).then(() => {
     fs.writeFileSync(path, data);
   })
@@ -83,8 +82,4 @@ function run() {
   writeFiles(ROOT, APIS, "api.ts", apis)
 }
 
-
-
 run()
-
-

@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 import { DTO_File } from '.';
-import { dashCase, getApiImports, getType, lowercaseFirstLetter } from './swagger-utils';
-
+import { dashCase, getApiImports, getType, lowercaseFirstLetter, removeDuplicates, sp } from './swagger-utils';
 
 export function extractApis(jsonData, name, enums): DTO_File[] {
   let paths = jsonData.paths;
@@ -10,32 +9,13 @@ export function extractApis(jsonData, name, enums): DTO_File[] {
   const keyNames = Object.keys(groups)
   const groupKeysArray = keyNames.map((keyName) => { return { name: keyName, values: groups[keyName] } })
   const apiFilesList = groupKeysArray.map(group => {
-    let methodsContent = group.values.map(method => {
-      let queryParams = ""
-      if (method.queryParams.length) {
-        queryParams = '?' + method.queryParams.map(item => item.name + '=${' + item.name + '}').join('&')
-      }
-      const fName = method.methodName
-      const par = method.parameters
-      const hPar = method.headerParams
-      const fPar = [...par, ...hPar].join(', ')
-      const responseType = method.responseType
-      const httpMethod = method.method
-      const requestType = method.requestType ? ', body' : ""
-      const headerLgn = hPar.length ? ', {headers}' : ""
-
-      return `export const ${fName} = (${fPar}): Promise<${responseType}> => {\n`
-        + `  return API().${httpMethod}(\`${method.path}${queryParams}\`${requestType}${headerLgn})\n};\n`
-    }).join('\n')
-    let imports = group.values.reduce((all, method) => all.concat(method.imports), []);
-    imports = Array.from(new Set(imports)).join("");
-    imports += `import { API } from "@/api";\n`;
-
-    let tsContent = `${imports}\n${methodsContent}`;
-
+    let imports = extractFileImports(group)
+    let methodsContent = getMethodContent(group)
+    const fileContent = `${imports}\n${methodsContent}`;
+    const fileName = dashCase(group.name)
     return {
-      name: dashCase(group.name),
-      content: tsContent
+      name: fileName,
+      content: fileContent
     }
   });
   return apiFilesList
@@ -82,4 +62,103 @@ function groupApis(paths, name, enums) {
   })
 
   return groups
-} 
+}
+
+type fn = {
+  sign: {
+    name: string,
+    parameters: string,
+    responseType: string,
+    headerParameters: string
+  }
+  body: {
+    httpMethod: string
+    path: string
+    queryParams: string
+    requestType: string
+    headers: string
+  }
+
+}
+
+function getMethodContent(group: { name: string, values: any }) {
+  const methods = group.values.map(method => {
+    let queryParams = getQueryParams(method)
+    const fSign: fn = {
+      sign: {
+        name: method.methodName,
+        parameters: method.parameters,
+        responseType: method.responseType,
+        headerParameters: method.headerParams
+      },
+      body: {
+        httpMethod: method.method,
+        path: method.path,
+        queryParams,
+        requestType: method.requestType ? ', body' : "",
+        headers: method.headerParams.length ? ', {headers}' : ""
+      }
+    }
+    const functionSignature = formatFunctionSignature(fSign)
+    const functionBody = formatFunctionBody(fSign)
+    return `${functionSignature} => {\n${functionBody}\n};\n`
+  }).join('\n')
+
+  return methods
+}
+
+function extractFileImports(group: { name: string, values: any }) {
+  const imports = `import { API } from "@/api";\n`;
+  const importsArray = group.values.reduce((all, method) => all.concat(method.imports), []);
+  const importsStr = removeDuplicates(importsArray).join("");
+  return imports + importsStr
+}
+
+function getQueryParams(method: any): string {
+  let queryParams = ""
+  if (method?.queryParams?.length) {
+    const quarryParamArray = method.queryParams.map(item => item.name + '=${' + item.name + '}')
+    queryParams = '?' + quarryParamArray.join('&')
+  }
+  return queryParams;
+}
+
+function formatFunctionSignature({ sign }: fn): string {
+  const { name, parameters, responseType, headerParameters } = sign
+  const sgn: string = `export const ${name} = (${parameters}): Promise<${responseType}>`
+  if (sgn.length >= 80) {
+    let formatted = ""
+    const splitSgn = sgn.split(",")
+    for (let i = 1; i < splitSgn.length; i++) {
+      splitSgn[i] = sp(2) + splitSgn[i].trim()
+    }
+    formatted = splitSgn.join(",\n")
+    formatted = formatted.replace(")", "\n)")
+    formatted = formatted.replace("(", "(\n  ")
+
+    return formatted
+  }
+  return sgn
+}
+
+function formatFunctionBody({ body }: fn): string {
+  const { httpMethod, path, queryParams, requestType, headers } = body
+  let formatted = "";
+  const returnStm = `  return API()\n`
+  const method = `    .${httpMethod}(\`${path}${queryParams}\`${requestType}${headers})`
+  const fnBody = returnStm + method
+  if (fnBody.length >= 80) {
+    let [path, quarryParams] = method.split("?")
+    path += "?\`"
+    const spaces = sp(6)
+    const paramsArray = quarryParams.split("&")
+    for (let i = 0; i < paramsArray.length - 1; i++) {
+      paramsArray[i] = spaces + `+ \`${paramsArray[i].trim()}&\``
+    }
+    const last = paramsArray.length - 1
+    paramsArray[last] = spaces + `+ \`${paramsArray[last].trim()}`
+    formatted = paramsArray.join("\n")
+    return returnStm + path + "\n" + formatted
+  }
+  return fnBody
+}

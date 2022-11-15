@@ -5,6 +5,18 @@ export function getKeysAsArray(obj: any): any[] {
   return rez
 }
 
+export function sp(no: number) {
+  let rez = "";
+  for (let i = 0; i < no; i++) {
+    rez += " "
+  }
+  return rez
+}
+
+export function removeDuplicates(array: any[]): any[] {
+  return Array.from(new Set(array));
+}
+
 export function lowercaseFirstLetter(str: string) {
   return str.charAt(0).toLowerCase() + str.slice(1);
 }

@@ -7,7 +7,6 @@ type Model = {
    values: any
 }
 
-
 export function extractModels(jsonData: any, enums: DTO_File[]): DTO_File[] {
 
    let schemaJSON: any = jsonData.components.schemas
@@ -105,13 +104,7 @@ function getModelImports(properties, enums, model) {
 }
 
 
-function sp(no: number) {
-   let rez = "";
-   for (let i = 0; i < no; i++) {
-      rez += " "
-   }
-   return rez
-}
+
 
 function getRef(content) {
    if (content['application/json']) {
