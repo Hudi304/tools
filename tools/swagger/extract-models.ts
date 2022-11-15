@@ -108,7 +108,7 @@ function filterModels(enumsArr: Model[], config: Config): Model[] {
   return rez
 }
 
-function getModelImports(properties, enums, model) {
+function getModelImports(properties: any, enums: any, model: any) {
   let imports: any[] = [];
   if (properties) {
     Object.keys(properties).forEach(key => {
@@ -126,7 +126,7 @@ function getModelImports(properties, enums, model) {
   return imports
 }
 
-function getRef(content) {
+function getRef(content: any) {
   if (content['application/json']) {
     return getRef(content['application/json'].schema)
   }
@@ -188,12 +188,12 @@ function getType(prop: any) {
   }
 }
 
-function isEnum(ref, enums) {
+function isEnum(ref: any, enums: any) {
   let cleanRef = ref.replace(/[\[\]]/g, '')
   return enums && enums.find(enu => enu.name === cleanRef)
 }
 
-function getInitValue(prop, name) {
+function getInitValue(prop: any, name: any) {
   if (name.toLowerCase().endsWith('guid'))
     return undefined;
   switch (prop.type) {

@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { DTO_File, Config } from '.';
 import { dashCase, getApiImports, getKeysAsArray, getType, lowercaseFirstLetter, removeDuplicates, sp } from './swagger-utils';
 
-export function extractApis(jsonData, config: Config, name, enums): DTO_File[] {
+export function extractApis(jsonData: any, config: Config, name: any, enums: any): DTO_File[] {
   let paths = jsonData.paths;
   console.log(chalk.yellowBright("Parsing APIs..."))
   let groups = groupApis(paths, name, enums);
@@ -22,7 +22,7 @@ export function extractApis(jsonData, config: Config, name, enums): DTO_File[] {
   return apiFilesList
 }
 
-function groupApis(paths, name, enums) {
+function groupApis(paths: any, name: any, enums: any) {
   let groups = {}
   // console.log("paths : ", paths)
   // const pathsArr = getKeysAsArray(paths)
