@@ -1,0 +1,18 @@
+title = "TOML Example"
+[enums]
+    [enums.title]
+        # endsWith = "DTO"
+        # startsWith = "A"
+        # regex = null //NOT IMPLEMENTED
+
+[models]
+     [models.title]
+        # endsWith = "DTO"
+        startsWith = "Ex"
+        # regex = null //NOT IMPLEMENTED
+[apis]
+    [apis.controllers]
+        include = ["Explorer"]
+        # exclude = ["Explorer"]
+
+

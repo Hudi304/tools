@@ -1,14 +1,15 @@
 import chalk from 'chalk';
-import { DTO_File } from '.';
-import { dashCase, getApiImports, getType, lowercaseFirstLetter, removeDuplicates, sp } from './swagger-utils';
+import { DTO_File, Config } from '.';
+import { dashCase, getApiImports, getKeysAsArray, getType, lowercaseFirstLetter, removeDuplicates, sp } from './swagger-utils';
 
-export function extractApis(jsonData, name, enums): DTO_File[] {
+export function extractApis(jsonData, config: Config, name, enums): DTO_File[] {
   let paths = jsonData.paths;
   console.log(chalk.yellowBright("Parsing APIs..."))
   let groups = groupApis(paths, name, enums);
   const keyNames = Object.keys(groups)
   const groupKeysArray = keyNames.map((keyName) => { return { name: keyName, values: groups[keyName] } })
-  const apiFilesList = groupKeysArray.map(group => {
+  const filteredAPIs = filterAPIs(groupKeysArray, config)
+  const apiFilesList = filteredAPIs.map(group => {
     let imports = extractFileImports(group)
     let methodsContent = getMethodContent(group)
     const fileContent = `${imports}\n${methodsContent}`;
@@ -23,6 +24,10 @@ export function extractApis(jsonData, name, enums): DTO_File[] {
 
 function groupApis(paths, name, enums) {
   let groups = {}
+  // console.log("paths : ", paths)
+  // const pathsArr = getKeysAsArray(paths)
+  // pathsArr.forEach(path => {
+  // });
 
   Object.keys(paths).forEach(path => {
     Object.keys(paths[path]).forEach(method => {
@@ -78,7 +83,6 @@ type fn = {
     requestType: string
     headers: string
   }
-
 }
 
 function getMethodContent(group: { name: string, values: any }) {
@@ -161,4 +165,27 @@ function formatFunctionBody({ body }: fn): string {
     return returnStm + path + "\n" + formatted
   }
   return fnBody
+}
+
+
+function filterAPIs(files: { name: string; values: any; }[], config: Config): { name: string; values: any; }[] {
+  const { apis } = config
+  const { controllers } = apis
+  const { include, exclude } = controllers
+
+  if (!include && !exclude) {
+    return files
+  }
+
+  let rez: { name: string; values: any; }[] = [...files]
+
+  if (include) {
+    rez = rez.filter((file) => include.includes(file.name))
+  }
+
+  if (exclude) {
+    rez = rez.filter((file) => !exclude.includes(file.name))
+  }
+
+  return rez
 }

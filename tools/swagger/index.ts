@@ -1,20 +1,24 @@
-import mkdirp from 'mkdirp';
-import rimraf from 'rimraf';
-
-import * as yargs from 'yargs';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+import * as yargs from 'yargs';
+import * as toml from 'toml';
+
+
 import chalk from 'chalk';
+import rimraf from 'rimraf';
+import mkdirp from 'mkdirp';
+
 import { extractEnums } from './extract-enums';
 import { extractModels } from './extract-models';
 import { extractApis } from './extract-apis';
-
+import { config } from 'yargs';
 const getDirName = path.dirname
-
 const ROOT = "src";
 const ENUMS = "common/enums";
 const MODELS = "common/models";
 const APIS = "api/endpoints";
+
+const CONFIG = "./tools/swagger.config.toml"
 const argv = yargs.argv
 let host = `localhost:41000`;
 let apis: API[] = [{
@@ -22,9 +26,33 @@ let apis: API[] = [{
   path: '/swagger/v1/swagger.json'
 }]
 
+
 export type DTO_File = {
   name: string,
   content: string
+}
+
+export type Config = {
+  enums: {
+    title: {
+      endsWith?: string
+      startsWith?: string
+      regex?: string
+    }
+  },
+  models: {
+    title: {
+      endsWith?: string
+      startsWith?: string
+      regex?: string
+    }
+  }
+  apis: {
+    controllers: {
+      include?: string[]
+      exclude?: string[]
+    }
+  }
 }
 
 type API = {
@@ -40,6 +68,7 @@ function readFile(path: any): string | undefined {
     const data = fs.readFileSync(path, 'utf8');
     return (data)
   } catch (err) {
+    console.log(err)
     return (undefined)
   }
 }
@@ -60,25 +89,30 @@ function writeFile(path: string, data: any) {
 }
 
 function run() {
-  const data = readFile("./tools/swagger/swagger.json");
+  const config = readFile(CONFIG)
+  if (!config) {
+    throw new Error("not good")
+  }
 
+  const configData: Config = toml.parse(config);
+  console.log(configData)
+
+  const data = readFile("./tools/swagger/swagger.json");
   if (!data) {
     throw new Error("not good")
   }
   const parsed = JSON.parse(data);
-
   if (!parsed) {
     throw new Error("not good")
   }
-
-  const enums = extractEnums(parsed)
+  const enums = extractEnums(parsed, configData)
   writeFiles(ROOT, ENUMS, "enum.ts", enums)
 
-  const models = extractModels(parsed, enums)
+  const models = extractModels(parsed, configData, enums)
   writeFiles(ROOT, MODELS, "model.ts", models)
 
   //TODO implement Result design pattern here for every API
-  const apis = extractApis(parsed, "explorer", enums)
+  const apis = extractApis(parsed, configData, "explorer", enums)
   writeFiles(ROOT, APIS, "api.ts", apis)
 }
 
