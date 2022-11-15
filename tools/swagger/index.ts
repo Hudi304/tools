@@ -89,13 +89,12 @@ function writeFile(path: string, data: any) {
 }
 
 function run() {
-  const config = readFile(CONFIG)
-  if (!config) {
+  const configData = readFile(CONFIG)
+  if (!configData) {
     throw new Error("not good")
   }
 
-  const configData: Config = toml.parse(config);
-  console.log(configData)
+  const config: Config = toml.parse(configData);
 
   const data = readFile("./tools/swagger/swagger.json");
   if (!data) {
@@ -105,14 +104,14 @@ function run() {
   if (!parsed) {
     throw new Error("not good")
   }
-  const enums = extractEnums(parsed, configData)
+  const enums = extractEnums(parsed, config)
   writeFiles(ROOT, ENUMS, "enum.ts", enums)
 
-  const models = extractModels(parsed, configData, enums)
+  const models = extractModels(parsed, config, enums)
   writeFiles(ROOT, MODELS, "model.ts", models)
 
   //TODO implement Result design pattern here for every API
-  const apis = extractApis(parsed, configData, "explorer", enums)
+  const apis = extractApis(parsed, config, "explorer", enums)
   writeFiles(ROOT, APIS, "api.ts", apis)
 }
 

@@ -2,7 +2,7 @@ title = "TOML Example"
 [enums]
     [enums.title]
         # endsWith = "DTO"
-        # startsWith = "A"
+        startsWith = "A"
         # regex = null //NOT IMPLEMENTED
 
 [models]
